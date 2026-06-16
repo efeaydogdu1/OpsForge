@@ -1,0 +1,41 @@
+using System.Security.Claims;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using OpsForge.Domain;
+
+namespace OpsForge.Application;
+
+public sealed class DeploymentHandlers(IAppDbContext db, IAuditService audit, ICurrentUserContext currentUser)
+    : IRequestHandler<CreateDeploymentCommand, DeploymentDto>
+{
+    public async Task<DeploymentDto> Handle(CreateDeploymentCommand request, CancellationToken cancellationToken)
+    {
+        var entity = new Deployment
+        {
+            ServiceId = request.ServiceId,
+            EnvironmentId = request.EnvironmentId,
+            Version = request.Version.Trim(),
+            CommitHash = request.CommitHash.Trim(),
+            ReleaseNotes = request.ReleaseNotes?.Trim(),
+            DeploymentDateUtc = DateTime.UtcNow,
+            DeployedByUserId = currentUser.UserId ?? Guid.Empty
+        };
+
+        db.Add(entity);
+        await db.SaveChangesAsync(cancellationToken);
+        await audit.LogAsync(AuditAction.Deployment, nameof(Deployment), entity.Id.ToString(), currentUser.UserId,
+            $"v{entity.Version} to env {entity.EnvironmentId}", cancellationToken);
+
+        return MapToDto(entity);
+    }
+
+    private static DeploymentDto MapToDto(Deployment d) =>
+        new(d.Id, d.ServiceId, d.EnvironmentId, d.Version, d.CommitHash, d.ReleaseNotes, d.DeploymentDateUtc, d.DeployedByUserId, d.IsDeleted);
+}
+
+public interface ICurrentUserContext
+{
+    Guid? UserId { get; }
+    string? Email { get; }
+    string? Role { get; }
+}

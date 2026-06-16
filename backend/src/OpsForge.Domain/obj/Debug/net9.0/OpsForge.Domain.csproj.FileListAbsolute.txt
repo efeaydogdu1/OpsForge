@@ -1,0 +1,11 @@
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\bin\Debug\net9.0\OpsForge.Domain.deps.json
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\bin\Debug\net9.0\OpsForge.Domain.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\bin\Debug\net9.0\OpsForge.Domain.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\obj\Debug\net9.0\OpsForge.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\obj\Debug\net9.0\OpsForge.Domain.AssemblyInfoInputs.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\obj\Debug\net9.0\OpsForge.Domain.AssemblyInfo.cs
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\obj\Debug\net9.0\OpsForge.Domain.csproj.CoreCompileInputs.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\obj\Debug\net9.0\OpsForge.Domain.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\obj\Debug\net9.0\refint\OpsForge.Domain.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\obj\Debug\net9.0\OpsForge.Domain.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Domain\obj\Debug\net9.0\ref\OpsForge.Domain.dll

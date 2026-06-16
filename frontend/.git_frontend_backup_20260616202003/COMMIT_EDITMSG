@@ -1,0 +1,25 @@
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch master
+# Changes to be committed:
+#	modified:   package-lock.json
+#	modified:   package.json
+#	new file:   src/app/dashboard/audit/page.tsx
+#	new file:   src/app/dashboard/deployments/page.tsx
+#	new file:   src/app/dashboard/environments/page.tsx
+#	new file:   src/app/dashboard/infrastructure/page.tsx
+#	new file:   src/app/dashboard/layout.tsx
+#	new file:   src/app/dashboard/page.tsx
+#	new file:   src/app/dashboard/services/page.tsx
+#	new file:   src/app/dashboard/teams/page.tsx
+#	modified:   src/app/globals.css
+#	modified:   src/app/layout.tsx
+#	new file:   src/app/login/page.tsx
+#	modified:   src/app/page.tsx
+#	new file:   src/app/register/page.tsx
+#	new file:   src/components/RequireAuth.tsx
+#	new file:   src/context/AuthContext.tsx
+#	new file:   src/lib/api.ts
+#

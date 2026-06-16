@@ -1,0 +1,15 @@
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\bin\Debug\net9.0\OpsForge.Application.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\bin\Debug\net9.0\OpsForge.Domain.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\bin\Debug\net9.0\OpsForge.Domain.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\OpsForge.Application.csproj.AssemblyReference.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\OpsForge.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\OpsForge.Application.AssemblyInfoInputs.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\OpsForge.Application.AssemblyInfo.cs
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\OpsForge.Application.csproj.CoreCompileInputs.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\OpsForge.Application.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\refint\OpsForge.Application.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\OpsForge.Application.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\bin\Debug\net9.0\OpsForge.Application.deps.json
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\bin\Debug\net9.0\OpsForge.Application.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\OpsForge.42C2FA4C.Up2Date
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Application\obj\Debug\net9.0\ref\OpsForge.Application.dll

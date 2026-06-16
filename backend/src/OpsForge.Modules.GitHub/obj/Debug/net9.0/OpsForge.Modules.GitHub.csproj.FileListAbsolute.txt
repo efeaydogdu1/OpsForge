@@ -1,0 +1,17 @@
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\bin\Debug\net9.0\OpsForge.Modules.GitHub.deps.json
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\bin\Debug\net9.0\OpsForge.Modules.GitHub.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\bin\Debug\net9.0\OpsForge.Modules.GitHub.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\bin\Debug\net9.0\OpsForge.Application.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\bin\Debug\net9.0\OpsForge.Domain.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\bin\Debug\net9.0\OpsForge.Application.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\bin\Debug\net9.0\OpsForge.Domain.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\OpsForge.Modules.GitHub.csproj.AssemblyReference.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\OpsForge.Modules.GitHub.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\OpsForge.Modules.GitHub.AssemblyInfoInputs.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\OpsForge.Modules.GitHub.AssemblyInfo.cs
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\OpsForge.Modules.GitHub.csproj.CoreCompileInputs.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\OpsForge.2D50A036.Up2Date
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\OpsForge.Modules.GitHub.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\refint\OpsForge.Modules.GitHub.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\OpsForge.Modules.GitHub.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.Modules.GitHub\obj\Debug\net9.0\ref\OpsForge.Modules.GitHub.dll

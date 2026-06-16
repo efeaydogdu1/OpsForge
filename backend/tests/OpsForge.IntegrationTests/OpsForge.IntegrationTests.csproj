@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.5" />
+    <PackageReference Include="Testcontainers" Version="3.10.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="3.10.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OpsForge.Api\OpsForge.Api.csproj" />
+    <ProjectReference Include="..\..\src\OpsForge.Application\OpsForge.Application.csproj" />
+    <ProjectReference Include="..\..\src\OpsForge.Domain\OpsForge.Domain.csproj" />
+    <ProjectReference Include="..\..\src\OpsForge.Infrastructure\OpsForge.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\OpsForge.BuildingBlocks\OpsForge.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\src\OpsForge.Modules.GitHub\OpsForge.Modules.GitHub.csproj" />
+  </ItemGroup>
+
+</Project>

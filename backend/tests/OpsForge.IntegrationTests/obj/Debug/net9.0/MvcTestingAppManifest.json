@@ -1,0 +1,8 @@
+{
+  "OpsForge.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\efeaydogdu\\source\\repos\\OpsForge\\backend\\src\\OpsForge.Api",
+  "OpsForge.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\efeaydogdu\\source\\repos\\OpsForge\\backend\\src\\OpsForge.Application",
+  "OpsForge.BuildingBlocks, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\efeaydogdu\\source\\repos\\OpsForge\\backend\\src\\OpsForge.BuildingBlocks",
+  "OpsForge.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\efeaydogdu\\source\\repos\\OpsForge\\backend\\src\\OpsForge.Domain",
+  "OpsForge.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\efeaydogdu\\source\\repos\\OpsForge\\backend\\src\\OpsForge.Infrastructure",
+  "OpsForge.Modules.GitHub, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "C:\\Users\\efeaydogdu\\source\\repos\\OpsForge\\backend\\src\\OpsForge.Modules.GitHub"
+}

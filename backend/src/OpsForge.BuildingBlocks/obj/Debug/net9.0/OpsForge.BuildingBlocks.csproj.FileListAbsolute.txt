@@ -1,0 +1,11 @@
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\bin\Debug\net9.0\OpsForge.BuildingBlocks.deps.json
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\bin\Debug\net9.0\OpsForge.BuildingBlocks.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\bin\Debug\net9.0\OpsForge.BuildingBlocks.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\obj\Debug\net9.0\OpsForge.BuildingBlocks.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\obj\Debug\net9.0\OpsForge.BuildingBlocks.AssemblyInfoInputs.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\obj\Debug\net9.0\OpsForge.BuildingBlocks.AssemblyInfo.cs
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\obj\Debug\net9.0\OpsForge.BuildingBlocks.csproj.CoreCompileInputs.cache
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\obj\Debug\net9.0\OpsForge.BuildingBlocks.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\obj\Debug\net9.0\refint\OpsForge.BuildingBlocks.dll
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\obj\Debug\net9.0\OpsForge.BuildingBlocks.pdb
+C:\Users\efeaydogdu\source\repos\OpsForge\backend\src\OpsForge.BuildingBlocks\obj\Debug\net9.0\ref\OpsForge.BuildingBlocks.dll
