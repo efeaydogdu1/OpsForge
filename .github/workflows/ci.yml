@@ -6,7 +6,7 @@ on:
 
 jobs:
   backend:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
@@ -15,10 +15,11 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
+      - run: docker pull postgres:16-alpine
       - run: dotnet test OpsForge.sln
 
   frontend:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
