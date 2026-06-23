@@ -39,6 +39,27 @@ services:
     ports:
       - "8080:8080"
 
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+    container_name: opsforge-worker
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8081
+      ApplyMigrationsOnStartup: "true"
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=opsforge;Username=postgres;Password=postgres
+      ConnectionStrings__HangfireConnection: Host=postgres;Port=5432;Database=opsforge;Username=postgres;Password=postgres
+      Jwt__SecretKey: change-this-secret-key-at-least-32-chars
+      GitHubSync__IntervalSeconds: 60
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+    ports:
+      - "8081:8081"
+
   frontend:
     build:
       context: .

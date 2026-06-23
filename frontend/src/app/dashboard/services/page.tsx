@@ -358,7 +358,7 @@ export default function ServicesPage() {
             {visibleServices.map((s) => (
               <tr key={s.id} className="border-t border-white/5 hover:bg-white/5">
                 <td className="px-4 py-3 text-white">
-                  <Link href={`/dashboard/infrastructure?serviceId=${s.id}`} className="hover:text-cyan-300 hover:underline">{s.name}</Link>
+                  <Link href={`/dashboard/services?serviceId=${s.id}`} className="hover:text-cyan-300 hover:underline">{s.name}</Link>
                 </td>
                 <td className="px-4 py-3 text-slate-300">
                   {s.ownerTeamId ? (

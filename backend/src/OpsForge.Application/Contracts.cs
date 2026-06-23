@@ -10,6 +10,11 @@ public sealed record RegisterCommand(string Email, string Password, string Displ
 public sealed record LoginCommand(string Email, string Password) : IRequest<AuthResponse>;
 public sealed record RefreshTokenCommand(string RefreshToken) : IRequest<AuthResponse>;
 
+public sealed record UserGitHubTokenDto(Guid Id, string Name, string TokenLastFour, bool IsDefault, bool IsActive, DateTime CreatedAtUtc, DateTime? LastUsedAtUtc);
+public sealed record CreateUserGitHubTokenCommand(string Name, string Token, bool IsDefault) : IRequest<UserGitHubTokenDto>;
+public sealed record UpdateUserGitHubTokenCommand(Guid Id, string Name, bool IsDefault, bool IsActive) : IRequest<UserGitHubTokenDto>;
+public sealed record DeleteUserGitHubTokenCommand(Guid Id) : IRequest<Unit>;
+
 public sealed record TeamDto(Guid Id, string Name, string? Description, bool IsDeleted, IReadOnlyCollection<TeamMemberDto> Members);
 public sealed record TeamMemberDto(Guid UserId, string Email, TeamMemberRole Role);
 public sealed record CreateTeamCommand(string Name, string? Description) : IRequest<TeamDto>;
@@ -41,6 +46,46 @@ public sealed record UnlinkAssetFromServiceCommand(Guid AssetId, Guid ServiceId)
 // Deployments
 public sealed record DeploymentDto(Guid Id, Guid ServiceId, Guid EnvironmentId, string Version, string CommitHash, string? ReleaseNotes, DateTime DeploymentDateUtc, Guid DeployedByUserId, bool IsDeleted);
 public sealed record CreateDeploymentCommand(Guid ServiceId, Guid EnvironmentId, string Version, string CommitHash, string? ReleaseNotes) : IRequest<DeploymentDto>;
+public sealed record UpdateDeploymentCommand(Guid Id, Guid ServiceId, Guid EnvironmentId, string Version, string CommitHash, string? ReleaseNotes) : IRequest<DeploymentDto>;
+public sealed record DeleteDeploymentCommand(Guid Id) : IRequest<Unit>;
+
+// Incidents
+public sealed record IncidentDto(
+    Guid Id,
+    string Title,
+    string Description,
+    string Severity,
+    string Status,
+    Guid ServiceId,
+    Guid? EnvironmentId,
+    Guid? DeploymentId,
+    Guid ReportedByUserId,
+    DateTime OccurredAtUtc,
+    DateTime? ResolvedAtUtc,
+    bool IsDeleted);
+public sealed record CreateIncidentCommand(string Title, string Description, IncidentSeverity Severity, IncidentStatus Status, Guid ServiceId, Guid? EnvironmentId, Guid? DeploymentId) : IRequest<IncidentDto>;
+public sealed record UpdateIncidentCommand(Guid Id, string Title, string Description, IncidentSeverity Severity, IncidentStatus Status, Guid ServiceId, Guid? EnvironmentId, Guid? DeploymentId, DateTime? ResolvedAtUtc) : IRequest<IncidentDto>;
+public sealed record DeleteIncidentCommand(Guid Id) : IRequest<Unit>;
+
+// Issues
+public sealed record IssueDto(
+    Guid Id,
+    string Title,
+    string? Description,
+    string Status,
+    string Source,
+    Guid ServiceId,
+    Guid? EnvironmentId,
+    Guid? DeploymentId,
+    string? ExternalUrl,
+    int? ExternalNumber,
+    string? ExternalState,
+    DateTime? ExternalCreatedAtUtc,
+    DateTime? ExternalUpdatedAtUtc,
+    bool IsDeleted);
+public sealed record CreateIssueCommand(string Title, string? Description, IssueStatus Status, Guid ServiceId, Guid? EnvironmentId, Guid? DeploymentId, string? ExternalUrl) : IRequest<IssueDto>;
+public sealed record UpdateIssueCommand(Guid Id, string Title, string? Description, IssueStatus Status, Guid ServiceId, Guid? EnvironmentId, Guid? DeploymentId, string? ExternalUrl) : IRequest<IssueDto>;
+public sealed record DeleteIssueCommand(Guid Id) : IRequest<Unit>;
 
 // Audit
 public sealed record AuditLogDto(Guid Id, Guid? UserId, DateTime TimestampUtc, string Action, string EntityType, string EntityId, string? Details);
@@ -62,17 +107,28 @@ public interface ITokenService
     string HashRefreshToken(string refreshToken);
 }
 
+public interface ISecretProtector
+{
+    string Protect(string value);
+    string Unprotect(string protectedValue);
+}
+
 public interface IAppDbContext
 {
     IQueryable<AppUser> Users { get; }
     IQueryable<RefreshToken> RefreshTokens { get; }
+    IQueryable<UserGitHubToken> UserGitHubTokens { get; }
     IQueryable<Team> Teams { get; }
     IQueryable<TeamMember> TeamMembers { get; }
     IQueryable<Service> Services { get; }
+    IQueryable<ServiceRepositoryLink> ServiceRepositoryLinks { get; }
+    IQueryable<RepositorySyncRun> RepositorySyncRuns { get; }
     IQueryable<ServiceEnvironment> ServiceEnvironments { get; }
     IQueryable<InfrastructureAsset> InfrastructureAssets { get; }
     IQueryable<ServiceInfrastructureLink> ServiceInfrastructureLinks { get; }
     IQueryable<Deployment> Deployments { get; }
+    IQueryable<Incident> Incidents { get; }
+    IQueryable<Issue> Issues { get; }
     IQueryable<AuditLogEntry> AuditLogs { get; }
 
     EntityEntry<TEntity> Add<TEntity>(TEntity entity) where TEntity : class;

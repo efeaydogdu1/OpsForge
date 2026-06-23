@@ -6,7 +6,9 @@ using OpsForge.Domain;
 namespace OpsForge.Application;
 
 public sealed class DeploymentHandlers(IAppDbContext db, IAuditService audit, ICurrentUserContext currentUser)
-    : IRequestHandler<CreateDeploymentCommand, DeploymentDto>
+    : IRequestHandler<CreateDeploymentCommand, DeploymentDto>,
+      IRequestHandler<UpdateDeploymentCommand, DeploymentDto>,
+      IRequestHandler<DeleteDeploymentCommand, Unit>
 {
     public async Task<DeploymentDto> Handle(CreateDeploymentCommand request, CancellationToken cancellationToken)
     {
@@ -27,6 +29,36 @@ public sealed class DeploymentHandlers(IAppDbContext db, IAuditService audit, IC
             $"v{entity.Version} to env {entity.EnvironmentId}", cancellationToken);
 
         return MapToDto(entity);
+    }
+
+    public async Task<DeploymentDto> Handle(UpdateDeploymentCommand request, CancellationToken cancellationToken)
+    {
+        var entity = await db.Deployments.FirstAsync(x => x.Id == request.Id, cancellationToken);
+        entity.ServiceId = request.ServiceId;
+        entity.EnvironmentId = request.EnvironmentId;
+        entity.Version = request.Version.Trim();
+        entity.CommitHash = request.CommitHash.Trim();
+        entity.ReleaseNotes = request.ReleaseNotes?.Trim();
+        db.Update(entity);
+
+        await db.SaveChangesAsync(cancellationToken);
+        await audit.LogAsync(AuditAction.Update, nameof(Deployment), entity.Id.ToString(), currentUser.UserId,
+            $"Updated CI/CD process {entity.Version}", cancellationToken);
+
+        return MapToDto(entity);
+    }
+
+    public async Task<Unit> Handle(DeleteDeploymentCommand request, CancellationToken cancellationToken)
+    {
+        var entity = await db.Deployments.FirstAsync(x => x.Id == request.Id, cancellationToken);
+        entity.IsDeleted = true;
+        db.Update(entity);
+
+        await db.SaveChangesAsync(cancellationToken);
+        await audit.LogAsync(AuditAction.Delete, nameof(Deployment), entity.Id.ToString(), currentUser.UserId,
+            "Deleted CI/CD process", cancellationToken);
+
+        return Unit.Value;
     }
 
     private static DeploymentDto MapToDto(Deployment d) =>

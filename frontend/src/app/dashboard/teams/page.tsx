@@ -21,7 +21,23 @@ export default function TeamsPage() {
     setServices(serviceList);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    const initialize = async () => {
+      const [teamList, serviceList] = await Promise.all([teamsApi.list(), servicesApi.list()]);
+      if (!cancelled) {
+        setTeams(teamList);
+        setServices(serviceList);
+      }
+    };
+
+    void initialize();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const openCreate = () => { setEditing(null); setName(""); setDescription(""); setShowForm(true); setError(""); };
   const openEdit = (t: Team) => { setEditing(t); setName(t.name); setDescription(t.description ?? ""); setShowForm(true); setError(""); };
@@ -83,7 +99,7 @@ export default function TeamsPage() {
                   <div className="flex flex-wrap gap-2">
                     {teamServices(t.id).length === 0 && <span className="text-xs text-slate-500">None</span>}
                     {teamServices(t.id).map((service) => (
-                      <Link key={service.id} href={`/dashboard/infrastructure?serviceId=${service.id}`} className="rounded-full bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300 hover:bg-cyan-500/20">
+                      <Link key={service.id} href={`/dashboard/services?serviceId=${service.id}`} className="rounded-full bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-300 hover:bg-cyan-500/20">
                         {service.name}
                       </Link>
                     ))}

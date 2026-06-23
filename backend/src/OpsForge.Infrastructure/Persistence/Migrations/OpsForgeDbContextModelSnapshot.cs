@@ -140,6 +140,64 @@ namespace OpsForge.Infrastructure.Persistence.Migrations
                     b.ToTable("DeploymentsSet");
                 });
 
+            modelBuilder.Entity("OpsForge.Domain.Incident", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeploymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("EnvironmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ReportedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeploymentId");
+
+                    b.HasIndex("EnvironmentId");
+
+                    b.HasIndex("ServiceId", "OccurredAtUtc");
+
+                    b.ToTable("IncidentsSet");
+                });
+
             modelBuilder.Entity("OpsForge.Domain.InfrastructureAsset", b =>
                 {
                     b.Property<Guid>("Id")
@@ -171,6 +229,76 @@ namespace OpsForge.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("InfrastructureAssetsSet");
+                });
+
+            modelBuilder.Entity("OpsForge.Domain.Issue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DeploymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("EnvironmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ExternalCreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ExternalNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ExternalState")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExternalUpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExternalUrl")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeploymentId");
+
+                    b.HasIndex("EnvironmentId");
+
+                    b.HasIndex("ServiceId", "Status");
+
+                    b.HasIndex("ServiceId", "Source", "ExternalNumber")
+                        .IsUnique()
+                        .HasFilter("\"ExternalNumber\" IS NOT NULL AND \"IsDeleted\" = false");
+
+                    b.ToTable("IssuesSet");
                 });
 
             modelBuilder.Entity("OpsForge.Domain.RefreshToken", b =>
@@ -491,6 +619,54 @@ namespace OpsForge.Infrastructure.Persistence.Migrations
                     b.ToTable("TeamMembersSet");
                 });
 
+            modelBuilder.Entity("OpsForge.Domain.UserGitHubToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EncryptedToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastUsedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TokenLastFour")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
+
+                    b.ToTable("UserGitHubTokensSet");
+                });
+
             modelBuilder.Entity("OpsForge.Domain.RefreshToken", b =>
                 {
                     b.HasOne("OpsForge.Domain.AppUser", null)
@@ -529,6 +705,15 @@ namespace OpsForge.Infrastructure.Persistence.Migrations
                     b.HasOne("OpsForge.Domain.Team", null)
                         .WithMany("Members")
                         .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OpsForge.Domain.UserGitHubToken", b =>
+                {
+                    b.HasOne("OpsForge.Domain.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using OpsForge.Application;
 using OpsForge.Domain;
@@ -64,5 +65,54 @@ public sealed class JwtTokenService(JwtOptions options) : ITokenService
     public string HashRefreshToken(string refreshToken)
     {
         return Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken)));
+    }
+}
+
+public sealed class AesSecretProtector(IConfiguration configuration) : ISecretProtector
+{
+    private const int NonceSize = 12;
+    private const int TagSize = 16;
+
+    public string Protect(string value)
+    {
+        var key = GetKey();
+        var nonce = RandomNumberGenerator.GetBytes(NonceSize);
+        var plaintext = Encoding.UTF8.GetBytes(value);
+        var ciphertext = new byte[plaintext.Length];
+        var tag = new byte[TagSize];
+
+        using var aes = new AesGcm(key, TagSize);
+        aes.Encrypt(nonce, plaintext, ciphertext, tag);
+
+        return string.Join(".", Convert.ToBase64String(nonce), Convert.ToBase64String(tag), Convert.ToBase64String(ciphertext));
+    }
+
+    public string Unprotect(string protectedValue)
+    {
+        var parts = protectedValue.Split('.', 3);
+        if (parts.Length != 3)
+        {
+            throw new InvalidOperationException("Protected value is invalid.");
+        }
+
+        var key = GetKey();
+        var nonce = Convert.FromBase64String(parts[0]);
+        var tag = Convert.FromBase64String(parts[1]);
+        var ciphertext = Convert.FromBase64String(parts[2]);
+        var plaintext = new byte[ciphertext.Length];
+
+        using var aes = new AesGcm(key, TagSize);
+        aes.Decrypt(nonce, ciphertext, tag, plaintext);
+
+        return Encoding.UTF8.GetString(plaintext);
+    }
+
+    private byte[] GetKey()
+    {
+        var secret = configuration["Security:TokenEncryptionKey"]
+            ?? configuration["Jwt:SecretKey"]
+            ?? throw new InvalidOperationException("Security:TokenEncryptionKey or Jwt:SecretKey must be configured.");
+
+        return SHA256.HashData(Encoding.UTF8.GetBytes(secret));
     }
 }

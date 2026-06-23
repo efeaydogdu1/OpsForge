@@ -60,6 +60,34 @@ public enum AuditAction
     Deployment = 5
 }
 
+public enum IncidentSeverity
+{
+    Low = 1,
+    Medium = 2,
+    High = 3,
+    Critical = 4
+}
+
+public enum IncidentStatus
+{
+    Open = 1,
+    Investigating = 2,
+    Mitigated = 3,
+    Resolved = 4
+}
+
+public enum IssueStatus
+{
+    Open = 1,
+    Closed = 2
+}
+
+public enum IssueSource
+{
+    Manual = 1,
+    GitHub = 2
+}
+
 public sealed class AppUser : AuditableEntity
 {
     public required string Email { get; set; }
@@ -76,6 +104,17 @@ public sealed class RefreshToken : Entity
     public DateTime ExpiresAtUtc { get; set; }
     public DateTime? RevokedAtUtc { get; set; }
     public string? ReplacedByTokenHash { get; set; }
+}
+
+public sealed class UserGitHubToken : AuditableEntity
+{
+    public Guid UserId { get; set; }
+    public required string Name { get; set; }
+    public required string EncryptedToken { get; set; }
+    public required string TokenLastFour { get; set; }
+    public bool IsDefault { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTime? LastUsedAtUtc { get; set; }
 }
 
 public sealed class Team : AuditableEntity
@@ -171,6 +210,37 @@ public sealed class Deployment : AuditableEntity
     public string? ReleaseNotes { get; set; }
     public DateTime DeploymentDateUtc { get; set; }
     public Guid DeployedByUserId { get; set; }
+}
+
+public sealed class Incident : AuditableEntity
+{
+    public required string Title { get; set; }
+    public required string Description { get; set; }
+    public IncidentSeverity Severity { get; set; } = IncidentSeverity.Medium;
+    public IncidentStatus Status { get; set; } = IncidentStatus.Open;
+    public Guid ServiceId { get; set; }
+    public Guid? EnvironmentId { get; set; }
+    public Guid? DeploymentId { get; set; }
+    public Guid ReportedByUserId { get; set; }
+    public DateTime OccurredAtUtc { get; set; }
+    public DateTime? ResolvedAtUtc { get; set; }
+}
+
+public sealed class Issue : AuditableEntity
+{
+    public required string Title { get; set; }
+    public string? Description { get; set; }
+    public IssueStatus Status { get; set; } = IssueStatus.Open;
+    public IssueSource Source { get; set; } = IssueSource.Manual;
+    public Guid ServiceId { get; set; }
+    public Guid? EnvironmentId { get; set; }
+    public Guid? DeploymentId { get; set; }
+    public string? ExternalUrl { get; set; }
+    public int? ExternalNumber { get; set; }
+    public string? ExternalState { get; set; }
+    public DateTime? ExternalCreatedAtUtc { get; set; }
+    public DateTime? ExternalUpdatedAtUtc { get; set; }
+    public Guid? CreatedByUserId { get; set; }
 }
 
 public sealed class AuditLogEntry : AuditableEntity
