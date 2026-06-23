@@ -5,8 +5,11 @@ const modules = [
   { href: "/dashboard/services", label: "Services", desc: "Register and manage platform services." },
   { href: "/dashboard/environments", label: "Environments", desc: "Track dev, test, UAT, and production environments." },
   { href: "/dashboard/infrastructure", label: "Infrastructure", desc: "Inventory databases, caches, VMs, and more." },
-  { href: "/dashboard/deployments", label: "Deployments", desc: "Record and review deployment history." },
+  { href: "/dashboard/deployments", label: "CI/CD Processes", desc: "Review GitHub CI/CD and deployment activity." },
+  { href: "/dashboard/incidents", label: "Incidents", desc: "Track incidents linked to services, environments, and CI/CD processes." },
+  { href: "/dashboard/issues", label: "Issues", desc: "Track manual and GitHub issues linked to services and CI/CD context." },
   { href: "/dashboard/audit", label: "Audit Log", desc: "Full audit trail of all platform actions." },
+  { href: "/dashboard/user", label: "User", desc: "Manage personal GitHub tokens for repository sync." },
 ];
 
 export default function DashboardPage() {

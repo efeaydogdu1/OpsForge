@@ -29,6 +29,7 @@ var jwtOptions = new JwtOptions(
 builder.Services.AddSingleton(jwtOptions);
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
+builder.Services.AddScoped<ISecretProtector, AesSecretProtector>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserContext, HttpCurrentUserContext>();
@@ -131,7 +132,7 @@ app.UseAuthorization();
 
 var api = app.MapGroup("/api/v1");
 api.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-api.MapGet("/meta", () => Results.Ok(new { modules = new[] { "Identity", "Teams", "Services", "Environments", "InfrastructureInventory", "Deployments", "AuditLogging" } }));
+api.MapGet("/meta", () => Results.Ok(new { modules = new[] { "Identity", "Teams", "Services", "Environments", "InfrastructureInventory", "Deployments", "Incidents", "Issues", "AuditLogging" } }));
 
 var auth = api.MapGroup("/auth");
 auth.MapPost("/register", async (HttpContext context, RegisterCommand command, ISender sender) =>
@@ -172,6 +173,62 @@ auth.MapPost("/refresh", async (HttpContext context, RefreshTokenCommand command
     });
 
     return Results.Ok(response);
+});
+
+var me = api.MapGroup("/me").RequireAuthorization();
+me.MapGet("/github-tokens", async (IAppDbContext db, ICurrentUserContext currentUser) =>
+{
+    if (!currentUser.UserId.HasValue)
+    {
+        return Results.Unauthorized();
+    }
+
+    var tokens = await db.UserGitHubTokens
+        .Where(x => x.UserId == currentUser.UserId.Value)
+        .OrderByDescending(x => x.IsDefault)
+        .ThenBy(x => x.Name)
+        .Select(x => new UserGitHubTokenDto(x.Id, x.Name, x.TokenLastFour, x.IsDefault, x.IsActive, x.CreatedAtUtc, x.LastUsedAtUtc))
+        .ToListAsync();
+
+    return Results.Ok(tokens);
+});
+me.MapPost("/github-tokens", async (CreateUserGitHubTokenCommand command, ISender sender, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        return Results.Ok(await sender.Send(command, cancellationToken));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+});
+me.MapPut("/github-tokens/{id:guid}", async (Guid id, UpdateUserGitHubTokenRequest request, ISender sender, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        return Results.Ok(await sender.Send(new UpdateUserGitHubTokenCommand(id, request.Name, request.IsDefault, request.IsActive), cancellationToken));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+me.MapDelete("/github-tokens/{id:guid}", async (Guid id, ISender sender, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        await sender.Send(new DeleteUserGitHubTokenCommand(id), cancellationToken);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
 });
 
 var teams = api.MapGroup("/teams").RequireAuthorization();
@@ -230,7 +287,7 @@ services.MapGet("", async (IAppDbContext db, ICurrentUserContext currentUser) =>
             .Distinct()
             .ToListAsync();
 
-        query = query.Where(s => s.OwnerTeamId.HasValue && allowedTeamIds.Contains(s.OwnerTeamId.Value));
+        query = query.Where(s => !s.OwnerTeamId.HasValue || allowedTeamIds.Contains(s.OwnerTeamId.Value));
     }
 
     return Results.Ok(await query
@@ -243,15 +300,13 @@ services.MapGet("/{id:guid}", async (Guid id, IAppDbContext db, ICurrentUserCont
     var s = await db.Services.FirstOrDefaultAsync(x => x.Id == id);
     if (s is not null && !isAdmin && currentUser.UserId.HasValue)
     {
-        if (!s.OwnerTeamId.HasValue)
+        if (s.OwnerTeamId.HasValue)
         {
-            return Results.Forbid();
-        }
-
-        var hasMembership = await db.TeamMembers.AnyAsync(x => x.TeamId == s.OwnerTeamId.Value && x.UserId == currentUser.UserId.Value);
-        if (!hasMembership)
-        {
-            return Results.Forbid();
+            var hasMembership = await db.TeamMembers.AnyAsync(x => x.TeamId == s.OwnerTeamId.Value && x.UserId == currentUser.UserId.Value);
+            if (!hasMembership)
+            {
+                return Results.Forbid();
+            }
         }
     }
 
@@ -271,18 +326,16 @@ services.MapPost("/{id:guid}/health-check", async (Guid id, IAppDbContext db, IC
     var isAdmin = string.Equals(currentUser.Role, UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase);
     if (!isAdmin && currentUser.UserId.HasValue)
     {
-        if (!service.OwnerTeamId.HasValue)
+        if (service.OwnerTeamId.HasValue)
         {
-            return Results.Forbid();
-        }
+            var hasMembership = await db.TeamMembers.AnyAsync(
+                x => x.UserId == currentUser.UserId.Value && x.TeamId == service.OwnerTeamId.Value,
+                cancellationToken);
 
-        var hasMembership = await db.TeamMembers.AnyAsync(
-            x => x.UserId == currentUser.UserId.Value && x.TeamId == service.OwnerTeamId.Value,
-            cancellationToken);
-
-        if (!hasMembership)
-        {
-            return Results.Forbid();
+            if (!hasMembership)
+            {
+                return Results.Forbid();
+            }
         }
     }
 
@@ -339,7 +392,7 @@ environments.MapGet("", async (Guid? serviceId, IAppDbContext db, ICurrentUserCo
             .Distinct()
             .ToListAsync();
 
-        query = query.Where(e => db.Services.Any(s => s.Id == e.ServiceId && s.OwnerTeamId.HasValue && allowedTeamIds.Contains(s.OwnerTeamId.Value)));
+        query = query.Where(e => db.Services.Any(s => s.Id == e.ServiceId && (!s.OwnerTeamId.HasValue || allowedTeamIds.Contains(s.OwnerTeamId.Value))));
     }
 
     if (serviceId.HasValue) query = query.Where(e => e.ServiceId == serviceId.Value);
@@ -364,7 +417,7 @@ infra.MapGet("", async (IAppDbContext db, ICurrentUserContext currentUser) =>
             .ToListAsync();
 
         allowedServiceIds = await db.Services
-            .Where(s => s.OwnerTeamId.HasValue && allowedTeamIds.Contains(s.OwnerTeamId.Value))
+            .Where(s => !s.OwnerTeamId.HasValue || allowedTeamIds.Contains(s.OwnerTeamId.Value))
             .Select(s => s.Id)
             .ToListAsync();
     }
@@ -431,7 +484,7 @@ deployments.MapGet("", async (Guid? serviceId, IAppDbContext db, ICurrentUserCon
             .Distinct()
             .ToListAsync();
 
-        query = query.Where(d => db.Services.Any(s => s.Id == d.ServiceId && s.OwnerTeamId.HasValue && allowedTeamIds.Contains(s.OwnerTeamId.Value)));
+        query = query.Where(d => db.Services.Any(s => s.Id == d.ServiceId && (!s.OwnerTeamId.HasValue || allowedTeamIds.Contains(s.OwnerTeamId.Value))));
     }
 
     if (serviceId.HasValue) query = query.Where(d => d.ServiceId == serviceId.Value);
@@ -441,6 +494,138 @@ deployments.MapGet("", async (Guid? serviceId, IAppDbContext db, ICurrentUserCon
         .ToListAsync());
 });
 deployments.MapPost("", async (CreateDeploymentCommand command, ISender sender) => Results.Ok(await sender.Send(command)));
+deployments.MapPut("/{id:guid}", async (Guid id, UpdateDeploymentCommand command, ISender sender) => Results.Ok(await sender.Send(command with { Id = id })));
+deployments.MapDelete("/{id:guid}", async (Guid id, ISender sender) => { await sender.Send(new DeleteDeploymentCommand(id)); return Results.NoContent(); });
+
+var incidents = api.MapGroup("/incidents").RequireAuthorization();
+incidents.MapGet("", async (IAppDbContext db, ICurrentUserContext currentUser) =>
+{
+    var isAdmin = string.Equals(currentUser.Role, UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase);
+    var query = db.Incidents.AsQueryable();
+
+    if (!isAdmin && currentUser.UserId.HasValue)
+    {
+        var allowedTeamIds = await db.TeamMembers
+            .Where(m => m.UserId == currentUser.UserId.Value)
+            .Select(m => m.TeamId)
+            .Distinct()
+            .ToListAsync();
+
+        query = query.Where(i => db.Services.Any(s => s.Id == i.ServiceId && (!s.OwnerTeamId.HasValue || allowedTeamIds.Contains(s.OwnerTeamId.Value))));
+    }
+
+    var rows = await query
+        .OrderByDescending(i => i.OccurredAtUtc)
+        .Select(i => new
+        {
+            Incident = i,
+            Service = db.Services.First(s => s.Id == i.ServiceId),
+            Environment = i.EnvironmentId.HasValue ? db.ServiceEnvironments.FirstOrDefault(e => e.Id == i.EnvironmentId.Value) : null,
+            Deployment = i.DeploymentId.HasValue ? db.Deployments.FirstOrDefault(d => d.Id == i.DeploymentId.Value) : null
+        })
+        .ToListAsync();
+
+    var result = rows.Select(row =>
+    {
+        var repositoryUrl = row.Service.RepositoryUrl;
+        var environmentGitHubUrl = repositoryUrl is not null && row.Environment is not null
+            ? $"{repositoryUrl}/tree/{Uri.EscapeDataString(row.Environment.Name)}"
+            : null;
+        var deploymentGitHubUrl = repositoryUrl is not null && row.Deployment is not null
+            ? $"{repositoryUrl}/commit/{row.Deployment.CommitHash}"
+            : null;
+
+        return new IncidentResponse(
+            row.Incident.Id,
+            row.Incident.Title,
+            row.Incident.Description,
+            row.Incident.Severity.ToString(),
+            row.Incident.Status.ToString(),
+            row.Incident.ServiceId,
+            row.Service.Name,
+            repositoryUrl,
+            row.Incident.EnvironmentId,
+            row.Environment?.Name,
+            environmentGitHubUrl,
+            row.Incident.DeploymentId,
+            row.Deployment?.Version,
+            deploymentGitHubUrl,
+            row.Incident.ReportedByUserId,
+            row.Incident.OccurredAtUtc,
+            row.Incident.ResolvedAtUtc);
+    });
+
+    return Results.Ok(result);
+});
+incidents.MapPost("", async (CreateIncidentCommand command, ISender sender) => Results.Ok(await sender.Send(command)));
+incidents.MapPut("/{id:guid}", async (Guid id, UpdateIncidentCommand command, ISender sender) => Results.Ok(await sender.Send(command with { Id = id })));
+incidents.MapDelete("/{id:guid}", async (Guid id, ISender sender) => { await sender.Send(new DeleteIncidentCommand(id)); return Results.NoContent(); });
+
+var issues = api.MapGroup("/issues").RequireAuthorization();
+issues.MapGet("", async (IAppDbContext db, ICurrentUserContext currentUser) =>
+{
+    var isAdmin = string.Equals(currentUser.Role, UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase);
+    var query = db.Issues.AsQueryable();
+
+    if (!isAdmin && currentUser.UserId.HasValue)
+    {
+        var allowedTeamIds = await db.TeamMembers
+            .Where(m => m.UserId == currentUser.UserId.Value)
+            .Select(m => m.TeamId)
+            .Distinct()
+            .ToListAsync();
+
+        query = query.Where(i => db.Services.Any(s => s.Id == i.ServiceId && (!s.OwnerTeamId.HasValue || allowedTeamIds.Contains(s.OwnerTeamId.Value))));
+    }
+
+    var rows = await query
+        .OrderByDescending(i => i.ExternalUpdatedAtUtc ?? i.UpdatedAtUtc)
+        .Select(i => new
+        {
+            Issue = i,
+            Service = db.Services.First(s => s.Id == i.ServiceId),
+            Environment = i.EnvironmentId.HasValue ? db.ServiceEnvironments.FirstOrDefault(e => e.Id == i.EnvironmentId.Value) : null,
+            Deployment = i.DeploymentId.HasValue ? db.Deployments.FirstOrDefault(d => d.Id == i.DeploymentId.Value) : null
+        })
+        .ToListAsync();
+
+    var result = rows.Select(row =>
+    {
+        var repositoryUrl = row.Service.RepositoryUrl;
+        var environmentGitHubUrl = repositoryUrl is not null && row.Environment is not null
+            ? $"{repositoryUrl}/tree/{Uri.EscapeDataString(row.Environment.Name)}"
+            : null;
+        var deploymentGitHubUrl = repositoryUrl is not null && row.Deployment is not null
+            ? $"{repositoryUrl}/commit/{row.Deployment.CommitHash}"
+            : null;
+
+        return new IssueResponse(
+            row.Issue.Id,
+            row.Issue.Title,
+            row.Issue.Description,
+            row.Issue.Status.ToString(),
+            row.Issue.Source.ToString(),
+            row.Issue.ServiceId,
+            row.Service.Name,
+            repositoryUrl,
+            row.Issue.EnvironmentId,
+            row.Environment?.Name,
+            environmentGitHubUrl,
+            row.Issue.DeploymentId,
+            row.Deployment?.Version,
+            deploymentGitHubUrl,
+            row.Issue.ExternalUrl,
+            row.Issue.ExternalNumber,
+            row.Issue.ExternalState,
+            row.Issue.ExternalCreatedAtUtc,
+            row.Issue.ExternalUpdatedAtUtc);
+    });
+
+    return Results.Ok(result);
+});
+issues.MapPost("", async (CreateIssueCommand command, ISender sender) => Results.Ok(await sender.Send(command)));
+issues.MapPut("/{id:guid}", async (Guid id, UpdateIssueCommand command, ISender sender) => Results.Ok(await sender.Send(command with { Id = id })));
+issues.MapDelete("/{id:guid}", async (Guid id, ISender sender) => { await sender.Send(new DeleteIssueCommand(id)); return Results.NoContent(); });
 
 var auditLogs = api.MapGroup("/audit").RequireAuthorization();
 auditLogs.MapGet("", async (string? entityType, Guid? userId, IAppDbContext db) =>
@@ -457,252 +642,68 @@ auditLogs.MapGet("", async (string? entityType, Guid? userId, IAppDbContext db) 
     api.MapGet("/github-ping", () => Results.Ok(new { status = "ok" }));
 
 var github = api.MapGroup("/github").RequireAuthorization();
-github.MapPost("/preview", async (PreviewRepositoryRequest request, [FromServices] IGitHubRepositoryUrlParser parser, [FromServices] IGitHubApiClient gitHubClient, CancellationToken cancellationToken) =>
+github.MapPost("/sync-account", async (ISender sender, CancellationToken cancellationToken) =>
 {
-    if (!parser.TryParse(request.RepositoryUrl, out var owner, out var repositoryName, out var normalizedUrl))
-    {
-        return Results.BadRequest(new { message = "Invalid GitHub repository URL." });
-    }
-
-    var metadata = await gitHubClient.GetRepositoryMetadataAsync(owner, repositoryName, normalizedUrl, cancellationToken);
-    var preview = new GitHubRepositoryMetadataDto(
-        metadata.Owner,
-        metadata.Name,
-        metadata.Url,
-        metadata.DefaultBranch,
-        metadata.Description,
-        metadata.Visibility,
-        metadata.PrimaryLanguage,
-        metadata.LatestCommitSha,
-        metadata.LatestCommitDateUtc,
-        metadata.LatestCommitMessage);
-
-    return Results.Ok(preview);
-});
-
-github.MapPost("/services/{serviceId:guid}/link", async (Guid serviceId, LinkRepositoryRequest request, [FromServices] OpsForgeDbContext db, [FromServices] ICurrentUserContext currentUser, [FromServices] IGitHubRepositoryUrlParser parser, [FromServices] IGitHubApiClient gitHubClient, [FromServices] IAuditService auditService, CancellationToken cancellationToken) =>
-{
-    var service = await db.ServicesSet.FirstOrDefaultAsync(x => x.Id == serviceId, cancellationToken);
-    if (service is null)
-    {
-        return Results.NotFound();
-    }
-
-    var isAdmin = string.Equals(currentUser.Role, UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase);
-    if (!isAdmin && currentUser.UserId.HasValue)
-    {
-        if (!service.OwnerTeamId.HasValue)
-        {
-            return Results.Forbid();
-        }
-
-        var hasMembership = await db.TeamMembersSet.AnyAsync(m => m.UserId == currentUser.UserId.Value && m.TeamId == service.OwnerTeamId.Value, cancellationToken);
-        if (!hasMembership)
-        {
-            return Results.Forbid();
-        }
-    }
-
-    if (!parser.TryParse(request.RepositoryUrl, out var owner, out var repositoryName, out var normalizedUrl))
-    {
-        return Results.BadRequest(new { message = "Invalid GitHub repository URL." });
-    }
-
-    var metadata = await gitHubClient.GetRepositoryMetadataAsync(owner, repositoryName, normalizedUrl, cancellationToken);
-
-    var existingLink = await db.ServiceRepositoryLinksSet.FirstOrDefaultAsync(x => x.ServiceId == serviceId, cancellationToken);
-    if (existingLink is null)
-    {
-        existingLink = new ServiceRepositoryLink
-        {
-            ServiceId = serviceId,
-            RepositoryOwner = metadata.Owner,
-            RepositoryName = metadata.Name,
-            RepositoryUrl = metadata.Url,
-            DefaultBranch = metadata.DefaultBranch,
-            Description = metadata.Description,
-            Visibility = metadata.Visibility,
-            PrimaryLanguage = metadata.PrimaryLanguage,
-            LatestCommitSha = metadata.LatestCommitSha,
-            LatestCommitDateUtc = metadata.LatestCommitDateUtc,
-            LatestCommitMessage = metadata.LatestCommitMessage,
-            LastSyncedAtUtc = DateTime.UtcNow
-        };
-        db.ServiceRepositoryLinksSet.Add(existingLink);
-    }
-    else
-    {
-        existingLink.RepositoryOwner = metadata.Owner;
-        existingLink.RepositoryName = metadata.Name;
-        existingLink.RepositoryUrl = metadata.Url;
-        existingLink.DefaultBranch = metadata.DefaultBranch;
-        existingLink.Description = metadata.Description;
-        existingLink.Visibility = metadata.Visibility;
-        existingLink.PrimaryLanguage = metadata.PrimaryLanguage;
-        existingLink.LatestCommitSha = metadata.LatestCommitSha;
-        existingLink.LatestCommitDateUtc = metadata.LatestCommitDateUtc;
-        existingLink.LatestCommitMessage = metadata.LatestCommitMessage;
-        existingLink.LastSyncedAtUtc = DateTime.UtcNow;
-        db.ServiceRepositoryLinksSet.Update(existingLink);
-    }
-
-    service.RepositoryUrl = metadata.Url;
-
-    var syncRun = new RepositorySyncRun
-    {
-        ServiceId = serviceId,
-        ServiceRepositoryLinkId = existingLink.Id,
-        StartedAtUtc = DateTime.UtcNow,
-        CompletedAtUtc = DateTime.UtcNow,
-        IsSuccess = true,
-        RepositoryOwner = metadata.Owner,
-        RepositoryName = metadata.Name,
-        RepositoryUrl = metadata.Url,
-        DefaultBranch = metadata.DefaultBranch,
-        Description = metadata.Description,
-        Visibility = metadata.Visibility,
-        PrimaryLanguage = metadata.PrimaryLanguage,
-        LatestCommitSha = metadata.LatestCommitSha,
-        LatestCommitDateUtc = metadata.LatestCommitDateUtc,
-        LatestCommitMessage = metadata.LatestCommitMessage
-    };
-    db.RepositorySyncRunsSet.Add(syncRun);
-
-    await db.SaveChangesAsync(cancellationToken);
-    await auditService.LogAsync(AuditAction.Update, "ServiceRepositoryLink", serviceId.ToString(), currentUser.UserId, $"Linked GitHub repository {metadata.Owner}/{metadata.Name}", cancellationToken);
-
-    var result = new GitHubRepositoryMetadataDto(
-        metadata.Owner,
-        metadata.Name,
-        metadata.Url,
-        metadata.DefaultBranch,
-        metadata.Description,
-        metadata.Visibility,
-        metadata.PrimaryLanguage,
-        metadata.LatestCommitSha,
-        metadata.LatestCommitDateUtc,
-        metadata.LatestCommitMessage);
-
-    return Results.Ok(result);
-});
-
-github.MapPost("/services/{serviceId:guid}/sync", async (Guid serviceId, [FromServices] OpsForgeDbContext db, [FromServices] ICurrentUserContext currentUser, [FromServices] IGitHubApiClient gitHubClient, [FromServices] IAuditService auditService, CancellationToken cancellationToken) =>
-{
-    var service = await db.ServicesSet.FirstOrDefaultAsync(x => x.Id == serviceId, cancellationToken);
-    if (service is null)
-    {
-        return Results.NotFound();
-    }
-
-    var isAdmin = string.Equals(currentUser.Role, UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase);
-    if (!isAdmin && currentUser.UserId.HasValue)
-    {
-        if (!service.OwnerTeamId.HasValue)
-        {
-            return Results.Forbid();
-        }
-
-        var hasMembership = await db.TeamMembersSet.AnyAsync(m => m.UserId == currentUser.UserId.Value && m.TeamId == service.OwnerTeamId.Value, cancellationToken);
-        if (!hasMembership)
-        {
-            return Results.Forbid();
-        }
-    }
-
-    var link = await db.ServiceRepositoryLinksSet.FirstOrDefaultAsync(x => x.ServiceId == serviceId, cancellationToken);
-    if (link is null)
-    {
-        return Results.BadRequest(new { message = "Service does not have a linked GitHub repository." });
-    }
-
-    var startedAt = DateTime.UtcNow;
-    RepositorySyncRun run;
-
     try
     {
-        var metadata = await gitHubClient.GetRepositoryMetadataAsync(link.RepositoryOwner, link.RepositoryName, link.RepositoryUrl, cancellationToken);
-
-        link.RepositoryOwner = metadata.Owner;
-        link.RepositoryName = metadata.Name;
-        link.RepositoryUrl = metadata.Url;
-        link.DefaultBranch = metadata.DefaultBranch;
-        link.Description = metadata.Description;
-        link.Visibility = metadata.Visibility;
-        link.PrimaryLanguage = metadata.PrimaryLanguage;
-        link.LatestCommitSha = metadata.LatestCommitSha;
-        link.LatestCommitDateUtc = metadata.LatestCommitDateUtc;
-        link.LatestCommitMessage = metadata.LatestCommitMessage;
-        link.LastSyncedAtUtc = DateTime.UtcNow;
-
-        run = new RepositorySyncRun
-        {
-            ServiceId = serviceId,
-            ServiceRepositoryLinkId = link.Id,
-            StartedAtUtc = startedAt,
-            CompletedAtUtc = DateTime.UtcNow,
-            IsSuccess = true,
-            RepositoryOwner = metadata.Owner,
-            RepositoryName = metadata.Name,
-            RepositoryUrl = metadata.Url,
-            DefaultBranch = metadata.DefaultBranch,
-            Description = metadata.Description,
-            Visibility = metadata.Visibility,
-            PrimaryLanguage = metadata.PrimaryLanguage,
-            LatestCommitSha = metadata.LatestCommitSha,
-            LatestCommitDateUtc = metadata.LatestCommitDateUtc,
-            LatestCommitMessage = metadata.LatestCommitMessage
-        };
-
-        db.RepositorySyncRunsSet.Add(run);
-        await db.SaveChangesAsync(cancellationToken);
-        await auditService.LogAsync(AuditAction.Update, "ServiceRepositorySync", serviceId.ToString(), currentUser.UserId, $"Synced GitHub repository {metadata.Owner}/{metadata.Name}", cancellationToken);
+        return Results.Ok(await sender.Send(new SyncGitHubAccountCommand(), cancellationToken));
     }
-    catch (Exception ex)
+    catch (InvalidOperationException ex)
     {
-        run = new RepositorySyncRun
-        {
-            ServiceId = serviceId,
-            ServiceRepositoryLinkId = link.Id,
-            StartedAtUtc = startedAt,
-            CompletedAtUtc = DateTime.UtcNow,
-            IsSuccess = false,
-            ErrorMessage = ex.Message,
-            RepositoryOwner = link.RepositoryOwner,
-            RepositoryName = link.RepositoryName,
-            RepositoryUrl = link.RepositoryUrl,
-            DefaultBranch = link.DefaultBranch,
-            Description = link.Description,
-            Visibility = link.Visibility,
-            PrimaryLanguage = link.PrimaryLanguage,
-            LatestCommitSha = link.LatestCommitSha,
-            LatestCommitDateUtc = link.LatestCommitDateUtc,
-            LatestCommitMessage = link.LatestCommitMessage
-        };
-
-        db.RepositorySyncRunsSet.Add(run);
-        await db.SaveChangesAsync(cancellationToken);
-        await auditService.LogAsync(AuditAction.Update, "ServiceRepositorySync", serviceId.ToString(), currentUser.UserId, $"GitHub sync failed: {ex.Message}", cancellationToken);
+        return Results.BadRequest(new { message = ex.Message });
     }
+});
 
-    var result = new RepositorySyncRunDto(
-        run.Id,
-        run.ServiceId,
-        run.StartedAtUtc,
-        run.CompletedAtUtc,
-        run.IsSuccess,
-        run.ErrorMessage,
-        run.RepositoryOwner,
-        run.RepositoryName,
-        run.RepositoryUrl,
-        run.DefaultBranch,
-        run.Description,
-        run.Visibility,
-        run.PrimaryLanguage,
-        run.LatestCommitSha,
-        run.LatestCommitDateUtc,
-        run.LatestCommitMessage);
+github.MapPost("/preview", async (PreviewRepositoryRequest request, ISender sender, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        return Results.Ok(await sender.Send(new PreviewRepositoryMetadataCommand(request.RepositoryUrl), cancellationToken));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+});
 
-    return Results.Ok(result);
+github.MapPost("/services/{serviceId:guid}/link", async (Guid serviceId, LinkRepositoryRequest request, ISender sender, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        return Results.Ok(await sender.Send(new LinkServiceRepositoryCommand(serviceId, request.RepositoryUrl), cancellationToken));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.Forbid();
+    }
+});
+
+github.MapPost("/services/{serviceId:guid}/sync", async (Guid serviceId, ISender sender, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        return Results.Ok(await sender.Send(new SyncLinkedRepositoryCommand(serviceId), cancellationToken));
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.Forbid();
+    }
 });
 
 github.MapGet("/services/{serviceId:guid}/sync-runs", async (Guid serviceId, [FromServices] OpsForgeDbContext db, [FromServices] ICurrentUserContext currentUser, CancellationToken cancellationToken) =>
@@ -757,4 +758,43 @@ app.Run();
 
 public sealed record LinkRepositoryRequest(string RepositoryUrl);
 public sealed record PreviewRepositoryRequest(string RepositoryUrl);
+public sealed record UpdateUserGitHubTokenRequest(string Name, bool IsDefault, bool IsActive);
+public sealed record IncidentResponse(
+    Guid Id,
+    string Title,
+    string Description,
+    string Severity,
+    string Status,
+    Guid ServiceId,
+    string ServiceName,
+    string? ServiceGitHubUrl,
+    Guid? EnvironmentId,
+    string? EnvironmentName,
+    string? EnvironmentGitHubUrl,
+    Guid? DeploymentId,
+    string? DeploymentVersion,
+    string? DeploymentGitHubUrl,
+    Guid ReportedByUserId,
+    DateTime OccurredAtUtc,
+    DateTime? ResolvedAtUtc);
+public sealed record IssueResponse(
+    Guid Id,
+    string Title,
+    string? Description,
+    string Status,
+    string Source,
+    Guid ServiceId,
+    string ServiceName,
+    string? ServiceGitHubUrl,
+    Guid? EnvironmentId,
+    string? EnvironmentName,
+    string? EnvironmentGitHubUrl,
+    Guid? DeploymentId,
+    string? DeploymentVersion,
+    string? DeploymentGitHubUrl,
+    string? ExternalUrl,
+    int? ExternalNumber,
+    string? ExternalState,
+    DateTime? ExternalCreatedAtUtc,
+    DateTime? ExternalUpdatedAtUtc);
 public partial class Program;

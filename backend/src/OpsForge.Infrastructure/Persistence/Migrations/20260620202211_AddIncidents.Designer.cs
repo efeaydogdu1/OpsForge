@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OpsForge.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using OpsForge.Infrastructure.Persistence;
 namespace OpsForge.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OpsForgeDbContext))]
-    partial class OpsForgeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260620202211_AddIncidents")]
+    partial class AddIncidents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -229,76 +232,6 @@ namespace OpsForge.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("InfrastructureAssetsSet");
-                });
-
-            modelBuilder.Entity("OpsForge.Domain.Issue", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("DeploymentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("EnvironmentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ExternalCreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("ExternalNumber")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ExternalState")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("ExternalUpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ExternalUrl")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("ServiceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Source")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeploymentId");
-
-                    b.HasIndex("EnvironmentId");
-
-                    b.HasIndex("ServiceId", "Status");
-
-                    b.HasIndex("ServiceId", "Source", "ExternalNumber")
-                        .IsUnique()
-                        .HasFilter("\"ExternalNumber\" IS NOT NULL AND \"IsDeleted\" = false");
-
-                    b.ToTable("IssuesSet");
                 });
 
             modelBuilder.Entity("OpsForge.Domain.RefreshToken", b =>

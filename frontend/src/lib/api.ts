@@ -37,6 +37,15 @@ export const authApi = {
   logout: () => { localStorage.removeItem("opsforge.token"); },
 };
 
+export const userGitHubTokensApi = {
+  list: () => api.get("/me/github-tokens").then((r) => r.data),
+  create: (data: { name: string; token: string; isDefault: boolean }) =>
+    api.post("/me/github-tokens", data).then((r) => r.data),
+  update: (id: string, data: { name: string; isDefault: boolean; isActive: boolean }) =>
+    api.put(`/me/github-tokens/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/me/github-tokens/${id}`),
+};
+
 export const teamsApi = {
   list: () => api.get("/teams").then((r) => r.data),
   get: (id: string) => api.get(`/teams/${id}`).then((r) => r.data),
@@ -55,6 +64,8 @@ export const servicesApi = {
 };
 
 export const githubApi = {
+  syncAccount: () =>
+    api.post("/github/sync-account", {}).then((r) => r.data),
   preview: (repositoryUrl: string) =>
     api.post("/github/preview", { repositoryUrl }).then((r) => r.data),
   link: (serviceId: string, repositoryUrl: string) =>
@@ -84,6 +95,22 @@ export const infraApi = {
 export const deploymentsApi = {
   list: (serviceId?: string) => api.get("/deployments", { params: { serviceId } }).then((r) => r.data),
   create: (data: object) => api.post("/deployments", data).then((r) => r.data),
+  update: (id: string, data: object) => api.put(`/deployments/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/deployments/${id}`),
+};
+
+export const incidentsApi = {
+  list: () => api.get("/incidents").then((r) => r.data),
+  create: (data: object) => api.post("/incidents", data).then((r) => r.data),
+  update: (id: string, data: object) => api.put(`/incidents/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/incidents/${id}`),
+};
+
+export const issuesApi = {
+  list: () => api.get("/issues").then((r) => r.data),
+  create: (data: object) => api.post("/issues", data).then((r) => r.data),
+  update: (id: string, data: object) => api.put(`/issues/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/issues/${id}`),
 };
 
 export const auditApi = {

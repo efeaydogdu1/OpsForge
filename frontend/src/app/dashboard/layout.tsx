@@ -10,8 +10,11 @@ const NAV = [
   { href: "/dashboard/services", label: "Services" },
   { href: "/dashboard/environments", label: "Environments" },
   { href: "/dashboard/infrastructure", label: "Infrastructure" },
-  { href: "/dashboard/deployments", label: "Deployments" },
+  { href: "/dashboard/deployments", label: "CI/CD Processes" },
+  { href: "/dashboard/incidents", label: "Incidents" },
+  { href: "/dashboard/issues", label: "Issues" },
   { href: "/dashboard/audit", label: "Audit Log" },
+  { href: "/dashboard/user", label: "User" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

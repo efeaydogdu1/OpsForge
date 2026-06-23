@@ -4,7 +4,7 @@ using OpsForge.Domain;
 
 namespace OpsForge.Application;
 
-public sealed class TeamHandlers(IAppDbContext db)
+public sealed class TeamHandlers(IAppDbContext db, ICurrentUserContext currentUser)
     : IRequestHandler<CreateTeamCommand, TeamDto>, IRequestHandler<UpdateTeamCommand, TeamDto>, IRequestHandler<DeleteTeamCommand, Unit>
 {
     public async Task<TeamDto> Handle(CreateTeamCommand request, CancellationToken cancellationToken)
@@ -16,6 +16,16 @@ public sealed class TeamHandlers(IAppDbContext db)
         };
 
         db.Add(entity);
+        if (currentUser.UserId.HasValue)
+        {
+            db.Add(new TeamMember
+            {
+                TeamId = entity.Id,
+                UserId = currentUser.UserId.Value,
+                Role = TeamMemberRole.Lead
+            });
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return new TeamDto(entity.Id, entity.Name, entity.Description, entity.IsDeleted, []);
     }
